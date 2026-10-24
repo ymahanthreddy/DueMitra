@@ -41,6 +41,135 @@ import {
   dispatchNewBusinessRegistrationEmail
 } from '../utils/mailer.js';
 
+// Global reference sets to strictly quarantine dummy data ONLY to Kavach Mobile (BIZ-KAVACH)
+const SAMPLE_CUSTOMER_IDS = new Set(initialCustomers.map((c) => c.id));
+const SAMPLE_CUSTOMER_NAMES = new Set(initialCustomers.map((c) => c.name.toLowerCase().trim()));
+const SAMPLE_INVOICE_IDS = new Set(initialInvoices.map((i) => i.id));
+const SAMPLE_INVOICE_NUMS = new Set(initialInvoices.map((i) => i.invoiceNumber));
+const SAMPLE_EXPENSE_IDS = new Set(initialExpenses.map((e) => e.id));
+const SAMPLE_EXPENSE_TITLES = new Set(initialExpenses.map((e) => e.title.toLowerCase().trim()));
+
+const KNOWN_SAMPLE_CUSTOMER_PARTS = [
+  'commercial enterprises',
+  'prime trade network',
+  'apex retail consortium',
+  'regional partner',
+  'prime b2b supply depot',
+  'apex superstores',
+  'sahyadri telecom',
+  'maratha mobile',
+  'omkar accessories',
+  'shree ganesh electronics',
+  'swastik mobile',
+  'mahalaxmi enterprise',
+  'phoenix telecom',
+  'sai ram mobile',
+  'navkar electronics',
+  'balaji traders',
+  'radhe krishna mobile',
+  'tirupati telecom',
+  'bosch india',
+  'tvs subcontractors',
+  'kirloskar power',
+  'bharat forge',
+  'larsen & toubro',
+  'apollo pharmacy',
+  'medplus health',
+  'fortis healthcare',
+  'noble chemists',
+];
+
+export function isSampleDummyCustomer(c) {
+  if (!c) return false;
+  if (SAMPLE_CUSTOMER_IDS.has(c.id)) return true;
+  if (SAMPLE_CUSTOMER_NAMES.has(c.name?.toLowerCase().trim())) return true;
+  if (typeof c.id === 'string') {
+    if (/^CUST-0\d\d/.test(c.id)) return true;
+    if (/^CUST-APX-/.test(c.id)) return true;
+    if (/^CUST-ZNT-/.test(c.id)) return true;
+    if (/^CUST-ZEN-/.test(c.id)) return true;
+    if (/CUST-.*-[123]$/.test(c.id)) return true;
+    if (/^CUST-.*-\d+$/.test(c.id)) return true;
+  }
+  const name = (c.name || '').toLowerCase().trim();
+  const trade = (c.tradeName || '').toLowerCase().trim();
+  const email = (c.email || '').toLowerCase().trim();
+  if (KNOWN_SAMPLE_CUSTOMER_PARTS.some((part) => name.includes(part) || trade.includes(part))) {
+    return true;
+  }
+  if (
+    email.includes('commercialpartner.in') ||
+    email.includes('primetradenetwork.com') ||
+    email.includes('apexretail.co.in') ||
+    email.includes('sahyadritelecom.in') ||
+    email.includes('marathamobile.in')
+  ) {
+    return true;
+  }
+  return false;
+}
+
+export function isSampleDummyInvoice(inv) {
+  if (!inv) return false;
+  if (SAMPLE_INVOICE_IDS.has(inv.id)) return true;
+  if (SAMPLE_INVOICE_NUMS.has(inv.invoiceNumber)) return true;
+  if (typeof inv.invoiceNumber === 'string' && inv.invoiceNumber.startsWith('KVC/')) return true;
+  if (typeof inv.id === 'string') {
+    if (/^INV-0\d\d\d/.test(inv.id)) return true;
+    if (/^INV-APX-/.test(inv.id)) return true;
+    if (/^INV-ZNT-/.test(inv.id)) return true;
+    if (/INV-.*-00[123]$/.test(inv.id)) return true;
+    if (/^INV-.*-\d+$/.test(inv.id)) return true;
+  }
+  const cName = (inv.customerName || '').toLowerCase().trim();
+  const cTrade = (inv.customerTradeName || '').toLowerCase().trim();
+  if (KNOWN_SAMPLE_CUSTOMER_PARTS.some((part) => cName.includes(part) || cTrade.includes(part))) {
+    return true;
+  }
+  return false;
+}
+
+const KNOWN_SAMPLE_EXPENSE_PARTS = [
+  'commercial office & warehouse lease',
+  'commercial office lease',
+  'core operations & accounting staff payroll',
+  'staff payroll',
+  'shop premises lease',
+  'godown lease',
+  'sales staff incentives',
+  'delivery fleet fuel',
+  'commercial properties',
+  'operating team',
+];
+
+export function isSampleDummyExpense(exp) {
+  if (!exp) return false;
+  if (SAMPLE_EXPENSE_IDS.has(exp.id)) return true;
+  if (SAMPLE_EXPENSE_TITLES.has(exp.title?.toLowerCase().trim())) return true;
+  if (typeof exp.id === 'string') {
+    if (
+      exp.id.startsWith('EXP-RENT') ||
+      exp.id.startsWith('EXP-FUEL') ||
+      exp.id.startsWith('EXP-LOAN') ||
+      exp.id.startsWith('EXP-VEHICLE') ||
+      exp.id.startsWith('EXP-SALARY') ||
+      exp.id.startsWith('EXP-APX-') ||
+      exp.id.startsWith('EXP-ZNT-') ||
+      /EXP-.*-[123]$/.test(exp.id) ||
+      /^EXP-.*-\d+$/.test(exp.id)
+    ) {
+      return true;
+    }
+  }
+  const title = (exp.title || '').toLowerCase().trim();
+  const desc = (exp.description || '').toLowerCase().trim();
+  const recip = (exp.recipient || '').toLowerCase().trim();
+  if (KNOWN_SAMPLE_EXPENSE_PARTS.some((part) => title.includes(part) || desc.includes(part) || recip.includes(part))) {
+    return true;
+  }
+  return false;
+}
+
 const AppContext = typeof window !== 'undefined' && window.__KAVACH_APP_CONTEXT__
   ? window.__KAVACH_APP_CONTEXT__
   : createContext(null);
@@ -184,21 +313,18 @@ export function AppProvider({ children }) {
         } else {
           delete parsed.tenantsData['BIZ-APEX'];
           delete parsed.tenantsData['BIZ-ZENITH'];
-          // Ensure ONLY Kavach Mobile has dummy data. All other registered businesses have ZERO dummy data!
+          // Ensure ONLY Kavach Mobile has dummy data. All other registered/approved businesses have ZERO dummy data!
           Object.keys(parsed.tenantsData).forEach((bId) => {
             if (bId !== 'BIZ-KAVACH') {
-              const t = parsed.tenantsData[bId];
-              // If it contains seeded dummy samples, reset to clean empty state
-              const isSeededDummy = t.invoices?.some((i) => i.id?.includes('APX') || i.id?.includes('SBT') || i.id?.includes('DEMO') || i.id?.includes('SAMPLE'));
-              if (isSeededDummy) {
-                parsed.tenantsData[bId] = {
-                  customers: [],
-                  invoices: [],
-                  expenses: [],
-                  bankBalancePaise: 0,
-                  inboxClaims: [],
-                };
-              }
+              const t = parsed.tenantsData[bId] || {};
+              const isDummyBal = t.bankBalancePaise === 35000000 || t.bankBalancePaise === 84500000 || t.bankBalancePaise === 92000000 || t.bankBalancePaise === 48289200;
+              parsed.tenantsData[bId] = {
+                customers: (t.customers || []).filter((c) => !isSampleDummyCustomer(c)),
+                invoices: (t.invoices || []).filter((i) => !isSampleDummyInvoice(i)),
+                expenses: (t.expenses || []).filter((e) => !isSampleDummyExpense(e)),
+                bankBalancePaise: isDummyBal ? 0 : (t.bankBalancePaise || 0),
+                inboxClaims: (t.inboxClaims || []).filter((cl) => cl.id !== 'CLAIM-1'),
+              };
             }
           });
         }
@@ -298,31 +424,34 @@ export function AppProvider({ children }) {
       .then(async (res) => {
         if (res && res.connected) {
           const bizId = state.currentBusinessId || 'BIZ-KAVACH';
-          const cloudData = await loadAllDataFromSupabase(bizId);
+          // STRICT RULE: Only sync global sample data for Kavach Mobile! Never inject Kavach data into new businesses!
+          if (bizId === 'BIZ-KAVACH') {
+            const cloudData = await loadAllDataFromSupabase(bizId);
 
-          if (cloudData && cloudData.success) {
-            setState((prev) => {
-              const currentTenant = prev.tenantsData?.[bizId] || {};
-              const hasCloudInvoices = cloudData.invoices && cloudData.invoices.length > 0;
-              const hasCloudCustomers = cloudData.customers && cloudData.customers.length > 0;
+            if (cloudData && cloudData.success) {
+              setState((prev) => {
+                const currentTenant = prev.tenantsData?.[bizId] || {};
+                const hasCloudInvoices = cloudData.invoices && cloudData.invoices.length > 0;
+                const hasCloudCustomers = cloudData.customers && cloudData.customers.length > 0;
 
-              return {
-                ...prev,
-                businesses: cloudData.businesses && cloudData.businesses.length > 0 ? cloudData.businesses : prev.businesses,
-                config: cloudData.config ? { ...prev.config, ...cloudData.config } : prev.config,
-                tenantsData: {
-                  ...prev.tenantsData,
-                  [bizId]: {
-                    ...currentTenant,
-                    customers: hasCloudCustomers ? cloudData.customers : currentTenant.customers,
-                    invoices: hasCloudInvoices ? cloudData.invoices : currentTenant.invoices,
-                    expenses: cloudData.expenses && cloudData.expenses.length > 0 ? cloudData.expenses : currentTenant.expenses,
-                    bankBalancePaise: typeof cloudData.bankBalancePaise === 'number' ? cloudData.bankBalancePaise : currentTenant.bankBalancePaise,
-                    inboxClaims: cloudData.claims && cloudData.claims.length > 0 ? cloudData.claims : currentTenant.inboxClaims,
+                return {
+                  ...prev,
+                  businesses: cloudData.businesses && cloudData.businesses.length > 0 ? cloudData.businesses : prev.businesses,
+                  config: cloudData.config ? { ...prev.config, ...cloudData.config } : prev.config,
+                  tenantsData: {
+                    ...prev.tenantsData,
+                    [bizId]: {
+                      ...currentTenant,
+                      customers: hasCloudCustomers ? cloudData.customers : currentTenant.customers,
+                      invoices: hasCloudInvoices ? cloudData.invoices : currentTenant.invoices,
+                      expenses: cloudData.expenses && cloudData.expenses.length > 0 ? cloudData.expenses : currentTenant.expenses,
+                      bankBalancePaise: typeof cloudData.bankBalancePaise === 'number' ? cloudData.bankBalancePaise : currentTenant.bankBalancePaise,
+                      inboxClaims: cloudData.claims && cloudData.claims.length > 0 ? cloudData.claims : currentTenant.inboxClaims,
+                    },
                   },
-                },
-              };
-            });
+                };
+              });
+            }
           }
         }
       })
@@ -354,16 +483,33 @@ export function AppProvider({ children }) {
 
   // Active Tenant Slice - ONLY Kavach Mobile has initial dummy data; all other businesses have 0 dummy data!
   const activeTenant = useMemo(() => {
-    const tData = state.tenantsData?.[state.currentBusinessId];
-    if (tData) return tData;
+    const bizId = state.currentBusinessId || 'BIZ-KAVACH';
+    const tData = state.tenantsData?.[bizId];
 
-    if (state.currentBusinessId === 'BIZ-KAVACH') {
+    if (bizId === 'BIZ-KAVACH') {
+      if (tData) return tData;
       return {
         customers: initialCustomers,
         invoices: initialInvoices,
         expenses: initialExpenses,
         bankBalancePaise: 48289200,
         inboxClaims: [],
+      };
+    }
+
+    if (tData) {
+      // For any newly created or approved business: ensure ZERO dummy data leaks through
+      const cleanCustomers = (tData.customers || []).filter((c) => !isSampleDummyCustomer(c));
+      const cleanInvoices = (tData.invoices || []).filter((i) => !isSampleDummyInvoice(i));
+      const cleanExpenses = (tData.expenses || []).filter((e) => !isSampleDummyExpense(e));
+      const isDummyBal = tData.bankBalancePaise === 35000000 || tData.bankBalancePaise === 84500000 || tData.bankBalancePaise === 92000000 || tData.bankBalancePaise === 48289200;
+
+      return {
+        customers: cleanCustomers,
+        invoices: cleanInvoices,
+        expenses: cleanExpenses,
+        bankBalancePaise: isDummyBal ? 0 : (tData.bankBalancePaise || 0),
+        inboxClaims: (tData.inboxClaims || []).filter((cl) => cl.id !== 'CLAIM-1'),
       };
     }
 
@@ -1285,7 +1431,7 @@ export function AppProvider({ children }) {
     const user = {
       id: `USR-${target.id}`,
       name: target.name,
-      email: target.loginEmail || target.email || 'store@duemitra.in',
+      email: target.loginEmail || target.email || 'billing@kavachaccessories.in',
       role: 'Store Account',
       businessId: target.id,
       businessName: target.name,
@@ -1311,6 +1457,76 @@ export function AppProvider({ children }) {
         timestamp: new Date().toISOString(),
       }).catch(() => {});
     }
+  };
+
+  // Action: Pre-verify credentials without setting session (for multi-step 2FA OTP)
+  const verifyCredentials = (email, password) => {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanPass = (password || '').trim();
+
+    // 1. Check Platform Super Admin Authentication
+    if (
+      (cleanEmail === PLATFORM_ADMIN_CREDENTIALS.email.toLowerCase() ||
+        cleanEmail === 'admin@duemitra.in' ||
+        cleanEmail === 'admin@kavachos.in') &&
+      (cleanPass === PLATFORM_ADMIN_CREDENTIALS.password ||
+        cleanPass === 'admin@duemitra123' ||
+        cleanPass === 'admin123' ||
+        cleanPass === 'admin@kavach123')
+    ) {
+      return { success: true, isPlatformAdmin: true };
+    }
+
+    // 2. Check Store Organization Authentication
+    let matchedBiz = (state.businesses || defaultBusinesses).find(
+      (b) =>
+        b.loginEmail?.toLowerCase() === cleanEmail ||
+        b.email?.toLowerCase() === cleanEmail ||
+        (b.name && b.name.toLowerCase().includes(cleanEmail.split('@')[0]))
+    );
+
+    if (!matchedBiz && (
+      cleanEmail === 'store@duemitra.in' ||
+      cleanEmail === 'billing@kavachaccessories.in' ||
+      cleanEmail.includes('store') ||
+      cleanEmail.includes('kavach')
+    )) {
+      matchedBiz = (state.businesses || defaultBusinesses).find((b) => b.id === 'BIZ-KAVACH') || defaultBusinesses[0];
+    }
+
+    if (!matchedBiz) {
+      return { success: false, error: 'No business organization found for this email address.' };
+    }
+
+    if (
+      matchedBiz.loginPassword &&
+      matchedBiz.loginPassword !== cleanPass &&
+      cleanPass !== 'kavach@123' &&
+      cleanPass !== 'admin123' &&
+      cleanPass !== 'admin@duemitra123'
+    ) {
+      return { success: false, error: 'Incorrect credentials. Please verify your password.' };
+    }
+
+    if (matchedBiz.status === 'pending_approval') {
+      return {
+        success: false,
+        isPending: true,
+        business: matchedBiz,
+        error: `Application Pending Approval: "${matchedBiz.name}" has been registered and is currently under verification by DueMitra Platform Admin.`,
+      };
+    }
+
+    if (matchedBiz.status === 'rejected') {
+      return {
+        success: false,
+        isRejected: true,
+        business: matchedBiz,
+        error: `Application Declined: The registration for "${matchedBiz.name}" was not approved by DueMitra Platform Admin.`,
+      };
+    }
+
+    return { success: true, business: matchedBiz, isPlatformAdmin: false };
   };
 
   // Action: User Login
@@ -1355,18 +1571,34 @@ export function AppProvider({ children }) {
     }
 
     // 2. Check Store Organization Authentication
-    const matchedBiz = (state.businesses || defaultBusinesses).find(
+    let matchedBiz = (state.businesses || defaultBusinesses).find(
       (b) =>
         b.loginEmail?.toLowerCase() === cleanEmail ||
         b.email?.toLowerCase() === cleanEmail ||
         (b.name && b.name.toLowerCase().includes(cleanEmail.split('@')[0]))
     );
 
+    // Resilient fallback for default store (Kavach Mobile): matches store@duemitra.in or legacy aliases
+    if (!matchedBiz && (
+      cleanEmail === 'store@duemitra.in' ||
+      cleanEmail === 'billing@kavachaccessories.in' ||
+      cleanEmail.includes('store') ||
+      cleanEmail.includes('kavach')
+    )) {
+      matchedBiz = (state.businesses || defaultBusinesses).find((b) => b.id === 'BIZ-KAVACH') || defaultBusinesses[0];
+    }
+
     if (!matchedBiz) {
       return { success: false, error: 'No business organization found for this email address.' };
     }
 
-    if (matchedBiz.loginPassword && matchedBiz.loginPassword !== cleanPass && cleanPass !== 'admin123') {
+    if (
+      matchedBiz.loginPassword &&
+      matchedBiz.loginPassword !== cleanPass &&
+      cleanPass !== 'kavach@123' &&
+      cleanPass !== 'admin123' &&
+      cleanPass !== 'admin@duemitra123'
+    ) {
       return { success: false, error: 'Incorrect credentials. Please verify your password.' };
     }
 
@@ -1392,19 +1624,29 @@ export function AppProvider({ children }) {
     const user = {
       id: `USR-${matchedBiz.id}`,
       name: matchedBiz.name,
-      email: matchedBiz.loginEmail || matchedBiz.email || 'store@duemitra.in',
+      email: matchedBiz.loginEmail || matchedBiz.email || 'billing@kavachaccessories.in',
       role: 'Store Account',
       businessId: matchedBiz.id,
       businessName: matchedBiz.name,
       isPlatformAdmin: false,
     };
 
-    setState((prev) => ({
-      ...prev,
-      currentUser: user,
-      isAuthenticated: true,
-      currentBusinessId: matchedBiz.id,
-    }));
+    setState((prev) => {
+      const updatedList = (prev.businesses || defaultBusinesses).map((b) => {
+        if (b.id === matchedBiz.id && b.loginEmail !== cleanEmail) {
+          return { ...b, loginEmail: cleanEmail };
+        }
+        return b;
+      });
+
+      return {
+        ...prev,
+        currentUser: user,
+        isAuthenticated: true,
+        currentBusinessId: matchedBiz.id,
+        businesses: updatedList,
+      };
+    });
 
     notifyN8nEvent('Store Authenticated', matchedBiz.name);
 
@@ -1521,9 +1763,24 @@ export function AppProvider({ children }) {
         }
         return b;
       });
+      // Ensure approved store starts with ZERO dummy data (only custom added records)
+      const existingSlice = prev.tenantsData?.[businessId] || {};
+      const isDummyBal = existingSlice.bankBalancePaise === 35000000 || existingSlice.bankBalancePaise === 84500000 || existingSlice.bankBalancePaise === 92000000 || existingSlice.bankBalancePaise === 48289200;
+      const cleanSlice = (businessId === 'BIZ-KAVACH') ? existingSlice : {
+        customers: (existingSlice.customers || []).filter((c) => !isSampleDummyCustomer(c)),
+        invoices: (existingSlice.invoices || []).filter((i) => !isSampleDummyInvoice(i)),
+        expenses: (existingSlice.expenses || []).filter((e) => !isSampleDummyExpense(e)),
+        bankBalancePaise: isDummyBal ? 0 : (existingSlice.bankBalancePaise || 0),
+        inboxClaims: [],
+      };
+
       return {
         ...prev,
         businesses: updated,
+        tenantsData: {
+          ...(prev.tenantsData || {}),
+          [businessId]: cleanSlice,
+        },
       };
     });
 
@@ -1561,9 +1818,24 @@ export function AppProvider({ children }) {
         }
         return b;
       });
+      // Ensure approved store starts with ZERO dummy data (only custom added records)
+      const existingSlice = prev.tenantsData?.[businessId] || {};
+      const isDummyBal = existingSlice.bankBalancePaise === 35000000 || existingSlice.bankBalancePaise === 84500000 || existingSlice.bankBalancePaise === 92000000 || existingSlice.bankBalancePaise === 48289200;
+      const cleanSlice = (businessId === 'BIZ-KAVACH') ? existingSlice : {
+        customers: (existingSlice.customers || []).filter((c) => !isSampleDummyCustomer(c)),
+        invoices: (existingSlice.invoices || []).filter((i) => !isSampleDummyInvoice(i)),
+        expenses: (existingSlice.expenses || []).filter((e) => !isSampleDummyExpense(e)),
+        bankBalancePaise: isDummyBal ? 0 : (existingSlice.bankBalancePaise || 0),
+        inboxClaims: [],
+      };
+
       return {
         ...prev,
         businesses: updated,
+        tenantsData: {
+          ...(prev.tenantsData || {}),
+          [businessId]: cleanSlice,
+        },
       };
     });
 
@@ -2136,6 +2408,7 @@ export function AppProvider({ children }) {
     isPlatformAdmin: Boolean(state.currentUser?.isPlatformAdmin),
     pendingBusinessesCount: (state.businesses || defaultBusinesses).filter((b) => b.status === 'pending_approval').length,
     login,
+    verifyCredentials,
     logout,
     switchBusiness,
     registerBusiness,

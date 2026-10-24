@@ -130,18 +130,17 @@ export function BankExpensesScreen() {
   };
 
   const totalMonthlyExpensePaise = expenses.reduce((sum, e) => sum + (e.amountPaise || 0), 0);
-  const rentExp = expenses.find((e) => e.category === 'Rent') || {
-    baseAmountPaise: 4500000,
-    annualEscalationPercent: 5,
-    leaseStartYear: 2025,
-  };
-
-  const projectedRentPaise = calculateEscalatedRent(
-    rentExp.baseAmountPaise || 4500000,
-    rentExp.leaseStartYear || 2025,
-    2025 + rentEscalationYears,
-    (rentExp.annualEscalationPercent || 5) / 100
-  );
+  const rentExp = expenses.find((e) => e.category === 'Rent');
+  const hasRent = Boolean(rentExp);
+  const baseRentPaise = rentExp ? (rentExp.baseAmountPaise || rentExp.amountPaise || 0) : 0;
+  const projectedRentPaise = hasRent
+    ? calculateEscalatedRent(
+        baseRentPaise,
+        rentExp.leaseStartYear || 2025,
+        2025 + rentEscalationYears,
+        (rentExp.annualEscalationPercent || 5) / 100
+      )
+    : 0;
 
   return (
     <div className="space-y-6 pb-12 animate-fade-in">
@@ -281,7 +280,7 @@ export function BankExpensesScreen() {
             </span>
           </div>
           <div className="text-2xl sm:text-3xl font-black text-white tracking-tight font-mono">
-            {affordability?.estimatedRunwayDays || 45} <span className="text-sm font-medium text-slate-400">days runway</span>
+            {expenses.length > 0 ? (affordability?.estimatedRunwayDays || 0) : 0} <span className="text-sm font-medium text-slate-400">days runway</span>
           </div>
           <div className="text-[11px] text-slate-500 mt-1">
             {bankBalancePaise >= (business?.safetyBufferPaise || 20000000)
@@ -325,9 +324,13 @@ export function BankExpensesScreen() {
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
           <div className="bg-[#0a0f1d] p-3.5 rounded-xl border border-white/5">
-            <div className="text-slate-400">Base Rent (2025)</div>
-            <div className="text-base font-bold font-mono text-white mt-1">₹45,000 / mo</div>
-            <div className="text-[10px] text-slate-500 mt-0.5">Lease starting point</div>
+            <div className="text-slate-400">Base Rent {hasRent ? `(${rentExp?.leaseStartYear || 2025})` : ''}</div>
+            <div className="text-base font-bold font-mono text-white mt-1">
+              {hasRent ? `${formatPaise(baseRentPaise)} / mo` : '₹0 / mo (None)'}
+            </div>
+            <div className="text-[10px] text-slate-500 mt-0.5">
+              {hasRent ? 'Lease starting point' : 'No rent expense added'}
+            </div>
           </div>
           <div className="bg-[#0a0f1d] p-3.5 rounded-xl border border-white/5">
             <div className="text-slate-400">Projected Month Cost</div>
@@ -368,8 +371,25 @@ export function BankExpensesScreen() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {expenses.map((item) => (
+        {expenses.length === 0 ? (
+          <div className="p-8 bg-[#0a0f1d] rounded-2xl border border-white/5 text-center space-y-2">
+            <Building className="w-8 h-8 text-slate-500 mx-auto" />
+            <p className="text-sm font-bold text-white">No Operating Expenses Recorded Yet</p>
+            <p className="text-xs text-slate-400 max-w-md mx-auto">
+              Add your recurring shop rent, utility bills, fuel, and loan EMIs to forecast working capital and compute runway.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowAddModal(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-md transition-colors cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>+ Add First Expense</span>
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {expenses.map((item) => (
             <div
               key={item.id}
               className="bg-[#0a0f1d] border border-white/5 hover:border-white/10 rounded-xl p-4 flex flex-col justify-between transition-all"
@@ -440,7 +460,8 @@ export function BankExpensesScreen() {
             </div>
           ))}
         </div>
-      </div>
+      )}
+    </div>
 
       {/* 5. Historical Monthly Statements Archive (View & Print any past month) */}
       <div className="bg-[#0b101d] border border-white/10 rounded-2xl p-5 shadow-lg space-y-4">

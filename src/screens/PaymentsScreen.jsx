@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Landmark,
   Upload,
+  UploadCloud,
   CheckCircle2,
   AlertTriangle,
   Info,
@@ -26,21 +27,39 @@ export function PaymentsScreen() {
   const {
     t,
     invoices,
+    business,
     bankBalancePaise,
     config,
     confirmPaymentMatch,
     confirmedMatches,
   } = useApp();
 
-  const [csvText, setCsvText] = useState(sampleBankStatementRaw);
+  const isKavachStore = business?.id === 'BIZ-KAVACH';
+  const [csvText, setCsvText] = useState(isKavachStore ? sampleBankStatementRaw : '');
   const [statementRows, setStatementRows] = useState([]);
   const [matchedResults, setMatchedResults] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [aiEngineUsed, setAiEngineUsed] = useState('Local AI Parser');
   const [showExplanation, setShowExplanation] = useState(true);
 
+  // Sync state whenever active store changes
+  useEffect(() => {
+    if (business?.id === 'BIZ-KAVACH') {
+      setCsvText(sampleBankStatementRaw);
+    } else {
+      setCsvText('');
+      setStatementRows([]);
+      setMatchedResults([]);
+    }
+  }, [business?.id]);
+
   // Load and parse initial statement rows
   useEffect(() => {
+    if (!csvText || !csvText.trim()) {
+      setStatementRows([]);
+      setMatchedResults([]);
+      return;
+    }
     const rows = parseBankStatementCsv(csvText);
     setStatementRows(rows);
   }, [csvText]);
@@ -234,8 +253,31 @@ export function PaymentsScreen() {
           </span>
         </div>
 
-        <div className="space-y-4">
-          {matchedResults.map((match, idx) => {
+        {matchedResults.length === 0 ? (
+          <div className="bg-[#0f172a]/70 backdrop-blur-md rounded-2xl border border-white/10 p-12 text-center space-y-3">
+            <Landmark className="w-12 h-12 text-slate-500 mx-auto" />
+            <h3 className="text-base font-bold text-white">No Bank Statement Uploaded Yet</h3>
+            <p className="text-xs text-slate-400 max-w-md mx-auto">
+              Upload your bank statement CSV file above to parse incoming credits, match UTR numbers against unpaid invoices, and auto-detect 2% TDS deductions.
+            </p>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <label className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition-all cursor-pointer">
+                <UploadCloud className="w-4 h-4" />
+                <span>Upload Statement CSV</span>
+                <input type="file" accept=".csv" onChange={handleFileUpload} className="hidden" />
+              </label>
+              <button
+                type="button"
+                onClick={() => setCsvText(sampleBankStatementRaw)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold rounded-xl border border-white/10 transition-colors cursor-pointer"
+              >
+                <span>Load Sample Statement (Demo)</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {matchedResults.map((match, idx) => {
             const isConfirmed = confirmedMatches.includes(match.bankRow.id);
             const isTds = match.matchType === 'tds_deduction';
             const isUnmatched = match.matchType === 'unmatched';
@@ -338,6 +380,7 @@ export function PaymentsScreen() {
             );
           })}
         </div>
+        )}
       </div>
     </div>
   );

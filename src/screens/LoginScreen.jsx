@@ -23,23 +23,57 @@ import { RegisterBusinessModal } from '../components/RegisterBusinessModal';
 
 export function LoginScreen() {
   const navigate = useNavigate();
-  const { login, businesses = [] } = useApp();
+  const { login, verifyCredentials, businesses = [] } = useApp();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [otp, setOtp] = useState('123456');
+  const [step, setStep] = useState(1); // 1: Credentials, 2: 2FA OTP
+  const [otp, setOtp] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isPendingNotice, setIsPendingNotice] = useState(false);
   const [loading, setLoading] = useState(false);
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
 
-  const handleLogin = (e) => {
+  // Step 1: Validate email & password, then advance to Step 2 OTP (without setting session!)
+  const handleProceedToOtp = (e) => {
     e.preventDefault();
     setError('');
     setIsPendingNotice(false);
-    setLoading(true);
 
+    if (!email.trim() || !password.trim()) {
+      setError('Please enter your email and password to continue.');
+      return;
+    }
+
+    setLoading(true);
+    // Pre-verify credentials without setting session!
+    const res = verifyCredentials ? verifyCredentials(email, password) : { success: true };
+    setLoading(false);
+
+    if (res.success) {
+      setStep(2);
+      setOtp('');
+      setError('');
+    } else {
+      setError(res.error || 'Authentication failed. Please verify credentials.');
+      if (res.isPending) {
+        setIsPendingNotice(true);
+      }
+    }
+  };
+
+  // Step 2: Validate OTP and complete sign in
+  const handleVerifyOtp = (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (!otp.trim() || otp.trim().length < 4) {
+      setError('Please enter the 6-digit OTP code (e.g. 123456) to complete verification.');
+      return;
+    }
+
+    setLoading(true);
     const res = login(email, password);
     setLoading(false);
 
@@ -50,16 +84,15 @@ export function LoginScreen() {
         navigate('/dashboard');
       }
     } else {
-      setError(res.error || 'Authentication failed. Please verify credentials.');
-      if (res.isPending) {
-        setIsPendingNotice(true);
-      }
+      setError(res.error || 'Verification failed. Please try again.');
     }
   };
 
   const handleAdminQuickFill = () => {
     setEmail('admin@duemitra.in');
     setPassword('admin@duemitra123');
+    setStep(1);
+    setOtp('');
     setError('');
     setIsPendingNotice(false);
   };
@@ -67,6 +100,8 @@ export function LoginScreen() {
   const handleStoreQuickFill = () => {
     setEmail('billing@kavachaccessories.in');
     setPassword('kavach@123');
+    setStep(1);
+    setOtp('');
     setError('');
     setIsPendingNotice(false);
   };
@@ -74,6 +109,8 @@ export function LoginScreen() {
   const handlePendingStoreQuickFill = () => {
     setEmail('accounts@balajitelecom.in');
     setPassword('balaji@123');
+    setStep(1);
+    setOtp('');
     setError('');
     setIsPendingNotice(false);
   };
@@ -104,14 +141,6 @@ export function LoginScreen() {
         </Link>
 
         <div className="flex items-center gap-3">
-          <button
-            onClick={handleDirectAdminLogin}
-            className="text-xs font-bold text-indigo-300 hover:text-white px-3 py-1.5 bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-400/30 rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
-            <span>HQ Admin Portal</span>
-          </button>
-
           <Link
             to="/"
             className="text-xs text-slate-400 hover:text-white transition-colors hidden sm:inline"
@@ -168,87 +197,136 @@ export function LoginScreen() {
             )}
 
             {/* Login Form */}
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
-                  <input
-                    type="email"
-                    required
-                    placeholder="billing@kavachaccessories.in or admin@duemitra.in"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-[#0A0F1D] border border-white/10 rounded-xl text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono transition-colors"
-                  />
-                </div>
-              </div>
+            <form onSubmit={step === 1 ? handleProceedToOtp : handleVerifyOtp} className="space-y-4">
+              {step === 1 ? (
+                <>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+                      <input
+                        type="email"
+                        required
+                        placeholder="billing@kavachaccessories.in or admin@duemitra.in"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2.5 bg-[#0A0F1D] border border-white/10 rounded-xl text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono transition-colors"
+                      />
+                    </div>
+                  </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-semibold text-slate-300">
-                    Password
-                  </label>
-                  <span className="text-[11px] text-slate-500 font-mono">
-                    demo: see quick-fill
-                  </span>
-                </div>
-                <div className="relative">
-                  <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    placeholder="••••••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-10 py-2.5 bg-[#0A0F1D] border border-white/10 rounded-xl text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono transition-colors"
-                  />
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-semibold text-slate-300">
+                        Password
+                      </label>
+                      <span className="text-[11px] text-slate-500 font-mono">
+                        demo: see quick-fill
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        placeholder="••••••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full pl-10 pr-10 py-2.5 bg-[#0A0F1D] border border-white/10 rounded-xl text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-3 text-slate-500 hover:text-slate-300 cursor-pointer"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
                   <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3 text-slate-500 hover:text-slate-300 cursor-pointer"
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold text-xs sm:text-sm rounded-xl shadow-lg shadow-indigo-600/30 border border-indigo-400/25 transition-all cursor-pointer flex items-center justify-center gap-2 min-h-[44px]"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    <span>{loading ? 'Checking Credentials...' : 'Next: Verify OTP'}</span>
+                    <ArrowRight className="w-4 h-4" />
                   </button>
-                </div>
-              </div>
+                </>
+              ) : (
+                <>
+                  {/* Step 2: 2FA OTP Prompt */}
+                  <div className="p-3 bg-indigo-950/40 border border-indigo-500/30 rounded-xl flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">Signing In Account</span>
+                      <span className="text-xs font-bold text-white font-mono">{email}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setStep(1)}
+                      className="text-[11px] font-bold text-indigo-400 hover:text-indigo-300 underline cursor-pointer"
+                    >
+                      Change
+                    </button>
+                  </div>
 
-              {/* Sample 2FA OTP Field */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-semibold text-slate-300">
-                    One-Time Password (OTP / 2FA)
-                  </label>
-                  <span className="text-[10px] text-emerald-400 font-mono bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                    Sample 2FA
-                  </span>
-                </div>
-                <div className="relative">
-                  <KeyRound className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
-                  <input
-                    type="text"
-                    maxLength={6}
-                    placeholder="Enter any 6 digits (e.g. 123456)"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
-                    className="w-full pl-10 pr-4 py-2.5 bg-[#0A0F1D] border border-white/10 rounded-xl text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-mono tracking-widest transition-colors"
-                  />
-                </div>
-                <div className="mt-1.5 p-2 bg-indigo-950/40 border border-indigo-500/30 rounded-lg text-[11px] text-slate-300 leading-relaxed">
-                  <strong className="text-cyan-300">Note:</strong> Any OTP works (e.g. <span className="font-mono text-white">123456</span>)! This is for sample 2-Factor Authentication simulation.
-                </div>
-              </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-semibold text-slate-300">
+                        One-Time Password (OTP / 2FA)
+                      </label>
+                      <span className="text-[10px] text-emerald-400 font-mono bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                        Step 2 of 2
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <KeyRound className="w-4 h-4 text-cyan-400 absolute left-3.5 top-3.5" />
+                      <input
+                        type="text"
+                        maxLength={6}
+                        autoFocus
+                        placeholder="Enter 6-digit OTP (e.g. 123456)"
+                        value={otp}
+                        onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
+                        className="w-full pl-10 pr-24 py-2.5 bg-[#0A0F1D] border border-cyan-500/40 rounded-xl text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-mono tracking-widest transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setOtp('123456')}
+                        className="absolute right-2 top-2 px-2.5 py-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 rounded-lg text-[10px] font-mono font-bold transition-colors cursor-pointer border border-cyan-500/30"
+                      >
+                        Auto-fill
+                      </button>
+                    </div>
+                    <div className="mt-2 p-2 bg-indigo-950/40 border border-indigo-500/30 rounded-lg text-[11px] text-slate-300 leading-relaxed flex items-start gap-2">
+                      <Sparkles className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="text-cyan-300">Simulation:</strong> Any 6-digit code works (or tap <span className="font-mono text-white font-bold">Auto-fill</span>).
+                      </div>
+                    </div>
+                  </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold text-xs sm:text-sm rounded-xl shadow-lg shadow-indigo-600/30 border border-indigo-400/25 transition-all cursor-pointer flex items-center justify-center gap-2 min-h-[44px]"
-              >
-                <span>{loading ? 'Authenticating...' : 'Sign In to Dashboard'}</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
+                  <div className="flex gap-2.5 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setStep(1)}
+                      className="w-1/3 py-2.5 bg-white/5 hover:bg-white/10 text-slate-300 font-bold text-xs rounded-xl border border-white/10 transition-colors cursor-pointer text-center"
+                    >
+                      &larr; Back
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-2/3 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold text-xs sm:text-sm rounded-xl shadow-lg shadow-indigo-600/30 border border-indigo-400/25 transition-all cursor-pointer flex items-center justify-center gap-2 min-h-[44px]"
+                    >
+                      <span>{loading ? 'Authenticating...' : 'Sign In to Dashboard'}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </>
+              )}
             </form>
 
             <div className="mt-5 pt-5 border-t border-white/[0.08] text-center">

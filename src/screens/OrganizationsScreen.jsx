@@ -20,7 +20,7 @@ import {
   TrendingUp,
   Activity
 } from 'lucide-react';
-import { useApp } from '../context/AppContext';
+import { useApp, isSampleDummyCustomer, isSampleDummyInvoice } from '../context/AppContext';
 import { formatPaise } from '../utils/money';
 import { RegisterBusinessModal } from '../components/RegisterBusinessModal';
 
@@ -155,7 +155,11 @@ export function OrganizationsScreen() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {businesses.map((biz) => {
           const isActive = biz.id === currentBusinessId;
-          const tenantSlice = tenantsData[biz.id] || {};
+          const rawSlice = tenantsData[biz.id] || {};
+          const tenantSlice = biz.id === 'BIZ-KAVACH' ? rawSlice : {
+            customers: (rawSlice.customers || []).filter((c) => !isSampleDummyCustomer(c)),
+            invoices: (rawSlice.invoices || []).filter((i) => !isSampleDummyInvoice(i)),
+          };
           const invoiceCount = tenantSlice.invoices?.length || 0;
           const customerCount = tenantSlice.customers?.length || 0;
           const totalAr = (tenantSlice.invoices || []).reduce(

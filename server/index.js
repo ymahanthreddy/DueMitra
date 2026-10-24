@@ -204,7 +204,7 @@ app.post('/api/reminders/send-due', async (req, res) => {
             body: JSON.stringify({
               from: `${business.name || 'DueMitra Reminders'} <onboarding@resend.dev>`,
               to: [targetRecipient],
-              reply_to: business.email || 'billing@kavachaccessories.in',
+              reply_to: (business.email && !business.email.includes('kavachaccessories.in')) ? business.email : (business.notificationEmail || 'admin@duemitra.in'),
               subject: emailSubject,
               html: emailHtml,
             }),
@@ -480,7 +480,11 @@ setInterval(() => {
   }
 }, 30000); // Check every 30 seconds
 
-app.listen(PORT, () => {
-  console.log(`DueMitra Server running on http://localhost:${PORT}`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`DueMitra Server running on http://localhost:${PORT}`);
+  });
+}
+
+export default app;
 

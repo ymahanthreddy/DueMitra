@@ -214,7 +214,7 @@ export function Sidebar({ mobileOpen, onCloseMobile }) {
                 <span className="text-indigo-300 font-semibold">{isPlatformAdmin ? 'Platform Admin' : 'Store Account'}</span>
                 <span>•</span>
                 <span className="font-mono text-[9px] text-slate-500 truncate max-w-[100px]">
-                  {isPlatformAdmin ? 'admin@duemitra.in' : (business?.loginEmail || 'store@duemitra.in')}
+                  {isPlatformAdmin ? 'admin@duemitra.in' : (business?.loginEmail || 'billing@kavachaccessories.in')}
                 </span>
               </div>
             </div>

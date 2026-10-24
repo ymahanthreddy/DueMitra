@@ -295,10 +295,25 @@ export function InvoicesScreen() {
         </div>
 
         {filteredInvoices.length === 0 && (
-          <div className="p-12 text-center text-slate-400">
-            <FileText className="w-12 h-12 mx-auto text-slate-600 mb-3" />
-            <p className="font-bold text-base text-slate-200">No invoices matched your filters</p>
-            <p className="text-xs text-slate-500 mt-1">Try resetting the search keyword or status filter.</p>
+          <div className="p-12 text-center text-slate-400 space-y-3">
+            <FileText className="w-12 h-12 mx-auto text-slate-600 mb-2" />
+            <p className="font-bold text-base text-slate-200">
+              {invoices.length === 0 ? 'No Invoices Created Yet' : 'No invoices matched your filters'}
+            </p>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              {invoices.length === 0
+                ? 'Create and dispatch your first GST-compliant B2B tax invoice with dynamic UPI QR code.'
+                : 'Try resetting the search keyword or status filter.'}
+            </p>
+            {invoices.length === 0 && (
+              <Link
+                to="/invoices/new"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>+ Create First Invoice</span>
+              </Link>
+            )}
           </div>
         )}
       </div>

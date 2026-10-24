@@ -25,7 +25,7 @@ import { formatPaise } from '../utils/money';
 import { validateGstin, STATE_CODES } from '../utils/gst';
 
 export function CustomersScreen() {
-  const { customers, invoices, addCustomer, updateCustomer } = useApp();
+  const { customers, invoices, business, addCustomer, updateCustomer } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
 
@@ -326,16 +326,20 @@ export function CustomersScreen() {
       {filtered.length === 0 ? (
         <div className="bg-[#0f172a]/70 backdrop-blur-md rounded-2xl border border-white/10 p-12 text-center space-y-3">
           <Users className="w-12 h-12 text-slate-500 mx-auto" />
-          <h3 className="text-base font-bold text-white">No Trade Customers Found</h3>
-          <p className="text-xs text-slate-400 max-w-sm mx-auto">
-            Try adjusting your search query or add a new trade customer to get started.
+          <h3 className="text-base font-bold text-white">
+            {customers.length === 0 ? `Welcome to ${business?.name || 'Your Store'}!` : 'No Trade Customers Found'}
+          </h3>
+          <p className="text-xs text-slate-400 max-w-md mx-auto">
+            {customers.length === 0
+              ? 'This store account is verified and ready. Add your first trade customer or retail buyer below to start generating GST invoices and tracking trade credit.'
+              : 'Try adjusting your search query or add a new trade customer to get started.'}
           </p>
           <button
             type="button"
             onClick={() => setIsAddModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
           >
-            <span>+ Add New Customer</span>
+            <span>+ Add Your First Customer</span>
           </button>
         </div>
       ) : (

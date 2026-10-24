@@ -47,6 +47,7 @@ export function DashboardScreen() {
     demoDate,
     n8nStatus,
     customers,
+    expenses = [],
     bankBalancePaise,
     affordability = {},
     monthlyStatements = [],
@@ -273,7 +274,7 @@ export function DashboardScreen() {
               {formatPaise(bankBalancePaise)}
             </span>
             <span className="text-[10px] text-emerald-400 font-medium block">
-              {affordability.runwayMonths || 1.8} Months Expense Runway
+              {expenses.length > 0 ? (affordability.runwayMonths || 0) : 0} Months Expense Runway
             </span>
           </div>
 
@@ -290,7 +291,7 @@ export function DashboardScreen() {
           <div className="p-3.5 bg-[#090d16] border border-slate-800 rounded-xl space-y-1">
             <span className="text-[11px] text-slate-400 font-semibold block">Monthly Committed Spend</span>
             <span className="text-lg font-bold font-mono text-amber-300 block">
-              {formatPaise(affordability.breakdown?.totalMonthlyCommittedPaise || 20700000)}
+              {formatPaise(expenses.length > 0 ? (affordability.breakdown?.totalMonthlyCommittedPaise || 0) : 0)}
             </span>
             <span className="text-[10px] text-slate-400 font-medium block">
               Rent + Petrol + Loans + Vehicles
