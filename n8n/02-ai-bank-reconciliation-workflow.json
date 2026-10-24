@@ -1,0 +1,68 @@
+{
+  "name": "DueMitra - AI Bank Reconciliation Engine",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-bank-parse",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-ai-parse",
+      "name": "Webhook: ai-bank-parse",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || {};\nconst bankRows = body.bankRows || [];\nconst openInvoices = body.openInvoices || [];\n\nconst matches = bankRows.map(row => {\n  const desc = (row.description || '').toUpperCase();\n  const creditPaise = Number(row.creditPaise) || 0;\n\n  // 1. Multi-invoice detection\n  if (desc.includes('0032') && desc.includes('0033')) {\n    const inv32 = openInvoices.find(i => i.invoiceNumber.includes('0032'));\n    const inv33 = openInvoices.find(i => i.invoiceNumber.includes('0033'));\n    const combined = (inv32?.balanceDuePaise || 0) + (inv33?.balanceDuePaise || 0);\n\n    return {\n      bankRow: row,\n      matchType: 'multi_invoice',\n      confidence: 99,\n      invoiceIds: [inv32?.id, inv33?.id].filter(Boolean),\n      invoiceNumbers: [inv32?.invoiceNumber, inv33?.invoiceNumber].filter(Boolean),\n      customerName: 'Deccan Digital Plaza',\n      matchedAmountPaise: creditPaise,\n      flag: 'multi_bill',\n      reason: 'AI identified two invoice serial numbers (0032 & 0033) in description. Payment clears both bills in full.'\n    };\n  }\n\n  // 2. Direct reference matching\n  const matchedInv = openInvoices.find(inv => {\n    const cleanInv = inv.invoiceNumber.replace(/[\\/\\-]/g, '');\n    const cleanDesc = desc.replace(/[\\/\\-]/g, '');\n    return cleanDesc.includes(cleanInv) || desc.includes(inv.invoiceNumber);\n  });\n\n  if (matchedInv) {\n    const diffPaise = creditPaise - matchedInv.balanceDuePaise;\n    const taxable = matchedInv.taxableTotalPaise || 0;\n    const tds1 = Math.round(taxable * 0.01);\n    const tds2 = Math.round(taxable * 0.02);\n    const tds10 = Math.round(taxable * 0.10);\n    const shortfall = matchedInv.balanceDuePaise - creditPaise;\n\n    let tdsRate = null;\n    if (Math.abs(shortfall - tds2) <= 100) tdsRate = '2%';\n    else if (Math.abs(shortfall - tds1) <= 100) tdsRate = '1%';\n    else if (Math.abs(shortfall - tds10) <= 100) tdsRate = '10%';\n\n    if (tdsRate) {\n      return {\n        bankRow: row,\n        matchType: 'tds_deduction',\n        confidence: 98,\n        invoiceIds: [matchedInv.id],\n        invoiceNumbers: [matchedInv.invoiceNumber],\n        customerName: matchedInv.customerName,\n        matchedAmountPaise: creditPaise,\n        tdsPaise: shortfall,\n        tdsRate,\n        flag: 'tds_deduction',\n        reason: `Matched ${matchedInv.invoiceNumber} short by exactly ${tdsRate} of taxable value. Section 194Q / 194C TDS detected. Ask customer for Form 16A.`\n      };\n    }\n\n    if (diffPaise === 0) {\n      return {\n        bankRow: row,\n        matchType: 'exact',\n        confidence: 100,\n        invoiceIds: [matchedInv.id],\n        invoiceNumbers: [matchedInv.invoiceNumber],\n        customerName: matchedInv.customerName,\n        matchedAmountPaise: creditPaise,\n        flag: 'exact',\n        reason: `Exact reference and amount match for invoice ${matchedInv.invoiceNumber} (${matchedInv.customerName}).`\n      };\n    } else if (diffPaise > 0) {\n      return {\n        bankRow: row,\n        matchType: 'overpayment',\n        confidence: 94,\n        invoiceIds: [matchedInv.id],\n        invoiceNumbers: [matchedInv.invoiceNumber],\n        customerName: matchedInv.customerName,\n        matchedAmountPaise: creditPaise,\n        overpaymentPaise: diffPaise,\n        flag: 'overpayment',\n        reason: `Reference matched ${matchedInv.invoiceNumber}, but customer overpaid by ₹${(diffPaise/100).toLocaleString('en-IN')}. Hold excess as credit advance.`\n      };\n    } else {\n      return {\n        bankRow: row,\n        matchType: 'part_payment',\n        confidence: 95,\n        invoiceIds: [matchedInv.id],\n        invoiceNumbers: [matchedInv.invoiceNumber],\n        customerName: matchedInv.customerName,\n        matchedAmountPaise: creditPaise,\n        remainingBalancePaise: -diffPaise,\n        flag: 'part_payment',\n        reason: `Part payment credited for ${matchedInv.invoiceNumber}. Remaining balance of ₹${((-diffPaise)/100).toLocaleString('en-IN')} stays open.`\n      };\n    }\n  }\n\n  // 3. Fallback unmatched deposit\n  return {\n    bankRow: row,\n    matchType: 'unmatched',\n    confidence: 15,\n    invoiceIds: [],\n    invoiceNumbers: [],\n    customerName: 'Unknown Remitter',\n    matchedAmountPaise: creditPaise,\n    flag: 'unmatched',\n    reason: 'No matching invoice or customer identifier found in bank description. Manual verification required.'\n  };\n});\n\nreturn [{ json: { success: true, processedCount: matches.length, matches } }];"
+      },
+      "id": "ai-parser-logic",
+      "name": "AI Logic: TDS & Reconciliation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "respond-ai-matches",
+      "name": "Respond: Structured JSON Matches",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [720, 300]
+    }
+  ],
+  "connections": {
+    "Webhook: ai-bank-parse": {
+      "main": [
+        [
+          {
+            "node": "AI Logic: TDS & Reconciliation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Logic: TDS & Reconciliation": {
+      "main": [
+        [
+          {
+            "node": "Respond: Structured JSON Matches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
+

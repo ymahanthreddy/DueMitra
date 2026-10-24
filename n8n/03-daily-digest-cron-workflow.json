@@ -1,0 +1,173 @@
+{
+  "name": "DueMitra - Unified Multi-Event & 2-3h Digest Engine",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 */2 * * *"
+            }
+          ]
+        }
+      },
+      "id": "cron-every-2-3-hours",
+      "name": "Cron: Every 2-3 Hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        180,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "due-reminders-digest",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-due-digest",
+      "name": "Webhook: /due-reminders-digest",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        180,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Unified Multi-Event Router for DueMitra ERP\nconst inputData = $input.first()?.json?.body || $input.first()?.json || {};\nconst eventType = inputData.event || 'due_reminders_digest';\n\n// 1. Connection Ping Test Handler (From DueMitra Settings > Test Connection)\nif (eventType === 'ping_test' || inputData.test === true || inputData.ping === true) {\n  return [{\n    json: {\n      success: true,\n      status: 'connected',\n      event: 'ping_test',\n      sendEmail: false,\n      message: 'DueMitra n8n Webhook Live & Responsive',\n      to: 'none',\n      timestamp: new Date().toISOString()\n    }\n  }];\n}\n\n// 2. Customer Dispute or Payment Claim Handler\nif (eventType === 'customer_dispute' || eventType === 'customer_already_paid') {\n  return [{\n    json: {\n      success: true,\n      status: eventType === 'customer_dispute' ? 'dispute_logged' : 'claim_logged',\n      event: eventType,\n      sendEmail: false,\n      action: eventType === 'customer_dispute' ? 'Escalation Ladder Paused' : 'Bank Reconciliation Queued',\n      invoiceNumber: inputData.data?.invoiceNumber || inputData.invoiceNumber,\n      message: eventType === 'customer_dispute' ? 'Dispute recorded: escalation paused' : 'Claim received: bank verification queued',\n      to: 'none',\n      timestamp: new Date().toISOString()\n    }\n  }];\n}\n\n// 3. Email Dispatch (Digest or Invoice)\nconst businessName = inputData.businessName || 'Kavach Mobile Accessories';\nconst rawEmail = inputData.to || inputData.recipientEmail || inputData.email || '';\nconst recipientEmail = (rawEmail && !rawEmail.includes('kavachaccessories.in') && rawEmail.includes('@')) ? rawEmail.trim() : '';\n\n// If pre-rendered HTML/Subject was passed from DueMitra app\nif (inputData.html && inputData.subject) {\n  return [{\n    json: {\n      to: recipientEmail,\n      sendEmail: Boolean(recipientEmail),\n      subject: inputData.subject,\n      html: inputData.html,\n      text: inputData.text || inputData.message,\n      event: eventType,\n      status: 'prepared_from_app',\n      message: Boolean(recipientEmail) ? 'Prepared and queued for dispatch' : 'Digest processed (email skipped: no valid recipient)',\n      timestamp: new Date().toISOString()\n    }\n  }];\n}\n\n// 4. Default / Autonomous Cron Fallback Data Structure\nconst followups = inputData.followups || [\n  {\n    invoiceNumber: 'KVC/26-27/0031',\n    customerName: 'Sahyadri Telecom',\n    customerPhone: '+91 98221 44556',\n    balanceDuePaise: 2289200,\n    balanceDueFormatted: '₹22,892',\n    stageNumber: 3,\n    stageName: 'Firmer Reminder',\n    daysDiff: 5\n  },\n  {\n    invoiceNumber: 'KVC/26-27/0026',\n    customerName: 'Maratha Mobile World',\n    customerPhone: '+91 98902 33441',\n    balanceDuePaise: 3433800,\n    balanceDueFormatted: '₹34,338',\n    stageNumber: 4,\n    stageName: 'Pre-Demand Notice',\n    daysDiff: 29\n  },\n  {\n    invoiceNumber: 'KVC/26-27/0023',\n    customerName: 'Balaji Cellular Store',\n    customerPhone: '+91 98500 22334',\n    balanceDuePaise: 14750000,\n    balanceDueFormatted: '₹1,47,500',\n    stageNumber: 5,\n    stageName: 'Payment Demand Letter',\n    daysDiff: 80\n  }\n];\n\nconst totalOverdueFormatted = inputData.totalOverdueFormatted || '₹2,04,730';\nconst totalOutstandingFormatted = inputData.totalOutstandingFormatted || '₹4,82,892';\n\nconst subject = `🛡️ DueMitra Due Digest (Every 2-3h): ${totalOverdueFormatted} Overdue • ${followups.length} Reminders Due [${businessName}]`;\n\nconst rows = followups.map(f => `\n  <tr>\n    <td style=\"padding: 10px; border-bottom: 1px solid #1e293b; color: #ffffff; font-weight: bold;\">${f.customerName}<br><span style=\"color: #94a3b8; font-size: 11px;\">${f.customerPhone}</span></td>\n    <td style=\"padding: 10px; border-bottom: 1px solid #1e293b; color: #cbd5e1; font-family: monospace;\">${f.invoiceNumber}</td>\n    <td style=\"padding: 10px; border-bottom: 1px solid #1e293b; color: #ffffff; font-weight: bold; text-align: right; font-family: monospace;\">${f.balanceDueFormatted}</td>\n    <td style=\"padding: 10px; border-bottom: 1px solid #1e293b; text-align: center;\"><span style=\"background: #6366f1; color: #ffffff; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: bold;\">Stage ${f.stageNumber}: ${f.stageName}</span></td>\n  </tr>\n`).join('');\n\nconst html = `\n<!DOCTYPE html>\n<html>\n<body style=\"font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0a0f1d; color: #f8fafc; padding: 20px; margin: 0;\">\n  <div style=\"max-width: 640px; margin: 0 auto; background: #0f172a; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); overflow: hidden;\">\n    <div style=\"background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%); padding: 24px; border-bottom: 1px solid rgba(255,255,255,0.08);\">\n      <h1 style=\"margin: 0; font-size: 20px; color: #ffffff;\">🛡️ ${businessName} - Executive Due Digest</h1>\n      <p style=\"margin: 4px 0 0; color: #94a3b8; font-size: 12px;\">Autonomous 2-3 Hour Briefing &bull; n8n Cloud Engine</p>\n    </div>\n    <div style=\"padding: 20px; background: #0b1120;\">\n      <table style=\"width: 100%;\">\n        <tr>\n          <td style=\"padding: 8px; background: #111c33; border-radius: 10px;\">\n            <span style=\"font-size: 10px; color: #94a3b8; text-transform: uppercase;\">Total Outstanding</span>\n            <div style=\"font-size: 18px; font-weight: bold; color: #ffffff;\">${totalOutstandingFormatted}</div>\n          </td>\n          <td style=\"padding: 8px; background: #111c33; border-radius: 10px;\">\n            <span style=\"font-size: 10px; color: #f43f5e; text-transform: uppercase;\">Capital Overdue</span>\n            <div style=\"font-size: 18px; font-weight: bold; color: #f43f5e;\">${totalOverdueFormatted}</div>\n          </td>\n          <td style=\"padding: 8px; background: #111c33; border-radius: 10px;\">\n            <span style=\"font-size: 10px; color: #10b981; text-transform: uppercase;\">MSMED Rate</span>\n            <div style=\"font-size: 18px; font-weight: bold; color: #10b981;\">19.5% p.a.</div>\n          </td>\n        </tr>\n      </table>\n    </div>\n    <div style=\"padding: 20px;\">\n      <h3 style=\"margin: 0 0 12px; font-size: 14px; color: #ffffff;\">Follow-up Reminders Queue for Today</h3>\n      <table style=\"width: 100%; border-collapse: collapse; font-size: 12px;\">\n        <thead>\n          <tr style=\"background: rgba(255,255,255,0.04); color: #94a3b8;\">\n            <th style=\"padding: 8px;\">Customer</th>\n            <th style=\"padding: 8px;\">Invoice</th>\n            <th style=\"padding: 8px; text-align: right;\">Due</th>\n            <th style=\"padding: 8px; text-align: center;\">Stage</th>\n          </tr>\n        </thead>\n        <tbody>\n          ${rows}\n        </tbody>\n      </table>\n    </div>\n    <div style=\"padding: 16px; background: #070b14; text-align: center; font-size: 11px; color: #64748b;\">\n      Generated automatically every 2-3 hours by DueMitra ERP & n8n Cloud\n    </div>\n  </div>\n</body>\n</html>\n`;\n\nreturn [{\n  json: {\n    to: recipientEmail,\n    sendEmail: Boolean(recipientEmail),\n    subject,\n    html,\n    text: subject,\n    event: eventType,\n    status: 'digest_compiled',\n    message: Boolean(recipientEmail) ? 'Digest compiled and queued for email delivery' : 'Digest compiled (email skipped: no valid recipient)',\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "draft-digest-code",
+      "name": "Process DueMitra Event & Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.sendEmail }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if-should-email",
+      "name": "Should Send Email?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        700,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.to }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "html",
+        "message": "={{ $json.html || $json.text }}"
+      },
+      "id": "gmail-send-digest",
+      "name": "Gmail: Send Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        920,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"status\": \"{{ $json.status || 'success' }}\",\n  \"event\": \"{{ $json.event || 'due_reminders_digest' }}\",\n  \"recipient\": \"{{ $json.to || 'none' }}\",\n  \"emailSent\": {{ $json.sendEmail ? true : false }},\n  \"message\": \"{{ $json.message || 'Event processed successfully by DueMitra n8n Engine' }}\",\n  \"dispatchedAt\": \"{{ $now.toISO() }}\",\n  \"schedule\": \"Every 2-3 Hours\"\n}",
+        "options": {}
+      },
+      "id": "respond-to-webhook",
+      "name": "Respond: 200 OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1140,
+        320
+      ]
+    }
+  ],
+  "connections": {
+    "Cron: Every 2-3 Hours": {
+      "main": [
+        [
+          {
+            "node": "Process DueMitra Event & Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: /due-reminders-digest": {
+      "main": [
+        [
+          {
+            "node": "Process DueMitra Event & Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process DueMitra Event & Content": {
+      "main": [
+        [
+          {
+            "node": "Should Send Email?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Send Email?": {
+      "main": [
+        [
+          {
+            "node": "Gmail: Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond: 200 OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail: Send Email": {
+      "main": [
+        [
+          {
+            "node": "Respond: 200 OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

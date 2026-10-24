@@ -1,0 +1,55 @@
+{
+  "name": "Kavach Dedicated Invoice Mailing Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "kavach-email",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook-kavach-email",
+      "name": "Webhook: kavach-email",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        260,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.body.to || $json.body.recipientEmail || $json.body.email || $json.body.data.customerEmail }}",
+        "subject": "={{ $json.body.subject || 'Tax Invoice from Sharma Packaging' }}",
+        "emailType": "html",
+        "message": "={{ $json.body.html || $json.body.text || 'Invoice generated successfully.' }}"
+      },
+      "id": "gmail-send-invoice",
+      "name": "Gmail: Send Invoice to Inbox",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        540,
+        320
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook: kavach-email": {
+      "main": [
+        [
+          {
+            "node": "Gmail: Send Invoice to Inbox",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
+

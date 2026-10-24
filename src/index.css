@@ -1,0 +1,559 @@
+@import "tailwindcss";
+
+@layer base {
+  html {
+    font-size: 16px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    color-scheme: dark;
+  }
+  body {
+    min-height: 100vh;
+    background-color: #0A0F1D;
+    color: #F8FAFC;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+}
+
+/* ========================================================
+   APEX FINTECH NAVY (Institutional Enterprise Financial Tier)
+   Canvas: Midnight Navy #0A0F1D
+   Surfaces: Slate Navy #111827 / #0F172A
+   Borders: rgba(255, 255, 255, 0.08)
+   Primary Action: Royal Indigo #6366F1 → #4F46E5
+   Positive / Growth: Mint Emerald #10B981
+   Warning / Caution: Amber Gold #F59E0B
+   Critical / Risk: Crimson Coral #F43F5E
+   AI / Automated: Vivid Cyan #06B6D4
+   Figures & Headings: Porcelain White #F8FAFC & Slate #94A3B8
+   ======================================================== */
+
+.glass-panel {
+  background: #0F172A;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+}
+
+.glass-panel-hover {
+  transition: all 0.2s ease-in-out;
+}
+.glass-panel-hover:hover {
+  background: #111827;
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.15);
+  transform: translateY(-1px);
+}
+
+/* Midnight Navy Canvas */
+.bg-\[\#0A0F1D\],
+.bg-\[\#0a0f1d\],
+.bg-\[\#0b0f19\],
+.bg-\[\#080c15\],
+.bg-\[\#050811\],
+.bg-\[\#140D0F\],
+.bg-\[\#020617\] {
+  background-color: #0A0F1D !important;
+}
+
+/* Slate Navy Card Surfaces */
+.bg-\[\#111827\],
+.bg-\[\#0F172A\],
+.bg-\[\#0f172a\],
+.bg-\[\#0d121d\],
+.bg-\[\#090e1a\],
+.bg-\[\#090d16\],
+.bg-\[\#161f30\],
+.bg-\[\#0c1322\],
+.bg-\[\#131b26\],
+.bg-\[\#1F1417\] {
+  background-color: #0F172A !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #F8FAFC !important;
+}
+
+/* Form Inputs, Selects & Inset Textareas */
+input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]),
+select,
+textarea {
+  background-color: #0A0F1D !important;
+  color: #F8FAFC !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #6366F1 !important;
+  outline: 2px solid rgba(99, 102, 241, 0.3) !important;
+}
+
+/* Headings & Text Hierarchy */
+h1, h2, h3, h4, h5, h6 {
+  color: #F8FAFC;
+}
+
+.text-white,
+.text-slate-50 {
+  color: #F8FAFC !important;
+}
+
+.text-slate-100,
+.text-slate-200,
+.text-slate-300 {
+  color: #E2E8F0 !important;
+}
+
+.text-slate-400,
+.text-slate-500 {
+  color: #94A3B8 !important;
+}
+
+/* Borders & Dividers */
+.border-white\/10,
+.border-white\/\[0\.08\],
+.border-white\/\[0\.06\],
+.border-white\/5,
+.border-slate-800,
+.border-slate-700,
+.border-slate-200,
+.border-\[\#332227\],
+.border-\[\#E9E6DE\] {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Primary Action Buttons: Royal Indigo (#6366F1 → #4F46E5) */
+button.bg-indigo-600,
+a.bg-indigo-600,
+.bg-indigo-600,
+button.bg-blue-600,
+a.bg-blue-600,
+.bg-blue-600,
+button.btn-primary,
+.btn-primary,
+button.bg-gradient-to-r,
+a.bg-gradient-to-r {
+  background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%) !important;
+  border: 1px solid rgba(99, 102, 241, 0.4) !important;
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.35) !important;
+}
+
+button.bg-indigo-600:hover,
+a.bg-indigo-600:hover,
+.bg-indigo-600:hover,
+button.bg-blue-600:hover,
+a.bg-blue-600:hover,
+.bg-blue-600:hover,
+button.btn-primary:hover,
+.btn-primary:hover,
+button.bg-gradient-to-r:hover,
+a.bg-gradient-to-r:hover {
+  background: linear-gradient(135deg, #4F46E5 0%, #4338CA 100%) !important;
+  box-shadow: 0 6px 18px 0 rgba(79, 70, 229, 0.45) !important;
+}
+
+/* Ensure button children inherit crisp white text */
+button.bg-indigo-600 *,
+a.bg-indigo-600 *,
+.bg-indigo-600 *,
+button.bg-blue-600 *,
+a.bg-blue-600 *,
+.bg-blue-600 *,
+button.btn-primary *,
+.btn-primary *,
+button.bg-gradient-to-r *,
+a.bg-gradient-to-r * {
+  color: #FFFFFF !important;
+  stroke: #FFFFFF !important;
+}
+
+/* Status Badges & Indicators */
+/* Positive / Growth: Mint Emerald #10B981 */
+.text-emerald-400,
+.text-emerald-300,
+.text-emerald-600 {
+  color: #10B981 !important;
+}
+.bg-emerald-950\/60,
+.bg-emerald-950\/50,
+.bg-emerald-950\/40,
+.bg-emerald-500\/10,
+.bg-emerald-500\/15,
+.bg-emerald-500\/20,
+.bg-emerald-50,
+.badge-paid {
+  background-color: rgba(16, 185, 129, 0.12) !important;
+  color: #10B981 !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+}
+
+/* Warning / Caution: Amber Gold #F59E0B */
+.text-amber-400,
+.text-amber-300,
+.text-amber-600 {
+  color: #F59E0B !important;
+}
+.bg-amber-950\/60,
+.bg-amber-950\/50,
+.bg-amber-950\/40,
+.bg-amber-500\/10,
+.bg-amber-500\/15,
+.bg-amber-500\/20,
+.bg-amber-50,
+.badge-pending,
+.badge-due-soon {
+  background-color: rgba(245, 158, 11, 0.12) !important;
+  color: #F59E0B !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+}
+
+/* Critical / Risk: Crimson Coral #F43F5E */
+.text-rose-400,
+.text-rose-300,
+.text-rose-600 {
+  color: #F43F5E !important;
+}
+.bg-rose-950\/60,
+.bg-rose-950\/50,
+.bg-rose-950\/40,
+.bg-rose-500\/10,
+.bg-rose-500\/15,
+.bg-rose-500\/20,
+.bg-rose-50,
+.badge-overdue {
+  background-color: rgba(244, 63, 94, 0.12) !important;
+  color: #F43F5E !important;
+  border: 1px solid rgba(244, 63, 94, 0.3) !important;
+}
+
+/* AI / Automated: Vivid Cyan #06B6D4 */
+.text-cyan-400,
+.text-cyan-300 {
+  color: #06B6D4 !important;
+}
+.bg-cyan-500\/10,
+.bg-cyan-500\/15,
+.bg-cyan-500\/20 {
+  background-color: rgba(6, 182, 212, 0.12) !important;
+  color: #06B6D4 !important;
+  border: 1px solid rgba(6, 182, 212, 0.3) !important;
+}
+
+/* Tables & Data Grid (Application Dark Theme - No !important so print previews can naturally be black) */
+.glass-panel table th,
+.glass-panel thead th,
+.dark-theme-table th {
+  background-color: #0A0F1D;
+  color: #94A3B8;
+  border-color: rgba(255, 255, 255, 0.08);
+  font-weight: 700;
+}
+
+.glass-panel table td,
+.dark-theme-table td {
+  border-color: rgba(255, 255, 255, 0.06);
+  color: #F8FAFC;
+}
+
+.glass-panel tbody tr:hover,
+.dark-theme-table tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0A0F1D;
+}
+::-webkit-scrollbar-thumb {
+  background: #1E293B;
+  border-radius: 9999px;
+  border: 1px solid #0A0F1D;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Screen vs Print Visibility */
+@media screen {
+  .print-only {
+    display: none !important;
+  }
+}
+
+/* ========================================================
+   PRINT & PDF DOCUMENT CONTAINERS (CRISP BLACK TEXT ON WHITE)
+   Guarantees high-contrast readability on screen previews & print
+   ======================================================== */
+.print-container,
+#printable-tax-invoice,
+#printable-demand-letter,
+#printable-evidence-pack,
+#printable-monthly-statement {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  height: auto !important;
+  min-height: 297mm;
+  box-sizing: border-box !important;
+}
+
+.print-container *,
+#printable-tax-invoice *,
+#printable-demand-letter *,
+#printable-evidence-pack *,
+#printable-monthly-statement * {
+  color: #0f172a !important;
+  text-shadow: none !important;
+}
+
+.print-container h1,
+.print-container h2,
+.print-container h3,
+.print-container h4,
+.print-container h5,
+.print-container strong,
+.print-container b,
+.print-container th,
+#printable-tax-invoice h1,
+#printable-tax-invoice h2,
+#printable-tax-invoice h3,
+#printable-tax-invoice h4,
+#printable-tax-invoice h5,
+#printable-tax-invoice strong,
+#printable-tax-invoice b,
+#printable-tax-invoice th,
+#printable-demand-letter h1,
+#printable-demand-letter h2,
+#printable-demand-letter h3,
+#printable-demand-letter h4,
+#printable-demand-letter h5,
+#printable-demand-letter strong,
+#printable-demand-letter b,
+#printable-demand-letter th,
+#printable-evidence-pack h1,
+#printable-evidence-pack h2,
+#printable-evidence-pack h3,
+#printable-evidence-pack h4,
+#printable-evidence-pack h5,
+#printable-evidence-pack strong,
+#printable-evidence-pack b,
+#printable-evidence-pack th,
+#printable-monthly-statement h1,
+#printable-monthly-statement h2,
+#printable-monthly-statement h3,
+#printable-monthly-statement h4,
+#printable-monthly-statement h5,
+#printable-monthly-statement strong,
+#printable-monthly-statement b,
+#printable-monthly-statement th {
+  color: #000000 !important;
+  font-weight: 800;
+}
+
+.print-container table,
+#printable-tax-invoice table,
+#printable-demand-letter table,
+#printable-evidence-pack table,
+#printable-monthly-statement table {
+  color: #000000 !important;
+  border-collapse: collapse !important;
+  width: 100% !important;
+}
+
+.print-container table td,
+#printable-tax-invoice table td,
+#printable-demand-letter table td,
+#printable-evidence-pack table td,
+#printable-monthly-statement table td {
+  color: #000000 !important;
+  background-color: #ffffff !important;
+  border: 1px solid #94a3b8 !important;
+}
+
+.print-container table th,
+#printable-tax-invoice table th,
+#printable-demand-letter table th,
+#printable-evidence-pack table th,
+#printable-monthly-statement table th {
+  color: #000000 !important;
+  background-color: #f1f5f9 !important;
+  border: 1px solid #64748b !important;
+  font-weight: 800 !important;
+}
+
+.print-container .border,
+.print-container .border-t,
+.print-container .border-b,
+.print-container .border-l,
+.print-container .border-r,
+#printable-tax-invoice .border,
+#printable-tax-invoice .border-t,
+#printable-tax-invoice .border-b,
+#printable-tax-invoice .border-l,
+#printable-tax-invoice .border-r,
+#printable-demand-letter .border,
+#printable-demand-letter .border-t,
+#printable-demand-letter .border-b,
+#printable-demand-letter .border-l,
+#printable-demand-letter .border-r,
+#printable-evidence-pack .border,
+#printable-evidence-pack .border-t,
+#printable-evidence-pack .border-b,
+#printable-evidence-pack .border-l,
+#printable-evidence-pack .border-r,
+#printable-monthly-statement .border,
+#printable-monthly-statement .border-t,
+#printable-monthly-statement .border-b,
+#printable-monthly-statement .border-l,
+#printable-monthly-statement .border-r {
+  border-color: #94a3b8 !important;
+}
+
+.print-container .bg-slate-50,
+.print-container .bg-slate-50\/50,
+#printable-tax-invoice .bg-slate-50,
+#printable-tax-invoice .bg-slate-50\/50,
+#printable-demand-letter .bg-slate-50,
+#printable-demand-letter .bg-slate-50\/50,
+#printable-evidence-pack .bg-slate-50,
+#printable-monthly-statement .bg-slate-50 {
+  background-color: #f8fafc !important;
+}
+
+/* ========================================================
+   MODERN FINTECH MICRO-INTERACTIONS & SMOOTH ANIMATIONS
+   ======================================================== */
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+
+@keyframes shimmerSweep {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.97) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.animate-float {
+  animation: floatSlow 4s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 3s ease-in-out infinite;
+}
+
+.animate-fade-scale {
+  animation: fadeInScale 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.fintech-card {
+  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.fintech-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(99, 102, 241, 0.45) !important;
+  box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.6), 0 0 24px rgba(99, 102, 241, 0.15) !important;
+}
+
+.interactive-btn {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.interactive-btn:active {
+  transform: scale(0.96);
+}
+.interactive-btn:hover {
+  transform: translateY(-1px);
+}
+
+.glass-glow {
+  position: relative;
+  overflow: hidden;
+}
+.glass-glow::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+/* Professional Print Styles for A4 Documents (Strictly White Paper & Black Ink) */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm 10mm;
+  }
+
+  *, *::before, *::after {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: auto !important;
+  }
+
+  /* Hide app header, sidebars, toast notifications & interactive buttons */
+  #root > div:not(.fixed),
+  aside,
+  header,
+  nav,
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .print-surface {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .print-break-inside-avoid {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-text-black {
+    color: #000000 !important;
+  }
+  .print-text-gray {
+    color: #374151 !important;
+  }
+  .print-border-gray {
+    border-color: #9ca3af !important;
+  }
+  .print-bg-gray {
+    background-color: #f3f4f6 !important;
+  }
+}

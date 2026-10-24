@@ -1,0 +1,78 @@
+{
+  "name": "DueMitra - WhatsApp Business Platform (Meta Cloud API)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-send-reminder",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-whatsapp",
+      "name": "Webhook: /whatsapp-send-reminder",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        180,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Formats payload for Meta Cloud API (WhatsApp Business Platform)\nconst body = $input.first()?.json?.body || $input.first()?.json || {};\n\nconst recipientPhone = (body.customerPhone || body.phone || '').replace(/[^0-9]/g, '');\nconst stageNumber = Number(body.stageNumber || body.stage || 1);\nconst customerName = body.customerName || 'Valued Customer';\nconst businessName = body.businessName || 'Kavach Mobile Accessories';\nconst invoiceNumber = body.invoiceNumber || 'INV-2026-001';\nconst amountFormatted = body.amountFormatted || '10,000';\nconst dueDate = body.dueDate || '2026-11-20';\nconst payUrl = body.payUrl || 'https://duemitra.in/pay';\nconst contactPerson = body.contactPerson || 'Accounts Officer (+91 98230 12345)';\nconst overdueDays = String(body.overdueDays || 5);\nconst lang = body.language || 'en'; // 'en', 'hi', 'mr'\n\n// 5 Official Meta Utility Templates\nconst templateMapping = {\n  1: {\n    name: 'friendly_pre_due_heads_up',\n    parameters: [\n      { type: 'text', text: customerName },\n      { type: 'text', text: businessName },\n      { type: 'text', text: invoiceNumber },\n      { type: 'text', text: amountFormatted },\n      { type: 'text', text: dueDate },\n      { type: 'text', text: payUrl },\n      { type: 'text', text: contactPerson }\n    ]\n  },\n  2: {\n    name: 'invoice_due_today_advisory',\n    parameters: [\n      { type: 'text', text: customerName },\n      { type: 'text', text: invoiceNumber },\n      { type: 'text', text: amountFormatted },\n      { type: 'text', text: businessName },\n      { type: 'text', text: dueDate },\n      { type: 'text', text: payUrl },\n      { type: 'text', text: contactPerson }\n    ]\n  },\n  3: {\n    name: 'first_overdue_followup',\n    parameters: [\n      { type: 'text', text: customerName },\n      { type: 'text', text: invoiceNumber },\n      { type: 'text', text: amountFormatted },\n      { type: 'text', text: businessName },\n      { type: 'text', text: overdueDays },\n      { type: 'text', text: dueDate },\n      { type: 'text', text: payUrl },\n      { type: 'text', text: contactPerson }\n    ]\n  },\n  4: {\n    name: 'second_overdue_warning',\n    parameters: [\n      { type: 'text', text: customerName },\n      { type: 'text', text: invoiceNumber },\n      { type: 'text', text: amountFormatted },\n      { type: 'text', text: businessName },\n      { type: 'text', text: overdueDays },\n      { type: 'text', text: payUrl },\n      { type: 'text', text: contactPerson }\n    ]\n  },\n  5: {\n    name: 'commercial_demand_heads_up',\n    parameters: [\n      { type: 'text', text: customerName },\n      { type: 'text', text: invoiceNumber },\n      { type: 'text', text: amountFormatted },\n      { type: 'text', text: businessName },\n      { type: 'text', text: overdueDays },\n      { type: 'text', text: payUrl },\n      { type: 'text', text: contactPerson }\n    ]\n  }\n};\n\nconst selected = templateMapping[stageNumber] || templateMapping[1];\n\nconst metaPayload = {\n  messaging_product: 'whatsapp',\n  recipient_type: 'individual',\n  to: recipientPhone.startsWith('91') ? recipientPhone : `91${recipientPhone}`,\n  type: 'template',\n  template: {\n    name: selected.name,\n    language: { code: lang === 'mr' ? 'mr' : lang === 'hi' ? 'hi' : 'en_US' },\n    components: [\n      {\n        type: 'body',\n        parameters: selected.parameters\n      }\n    ]\n  }\n};\n\nreturn [{\n  json: {\n    recipientPhone: metaPayload.to,\n    templateName: selected.name,\n    metaPayload,\n    isConfigured: Boolean(process.env.META_ACCESS_TOKEN && process.env.META_PHONE_NUMBER_ID)\n  }\n}];"
+      },
+      "id": "format-meta-payload",
+      "name": "Format Meta Template Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"status\": \"dispatched\",\n  \"channel\": \"whatsapp_business_cloud_api\",\n  \"recipient\": \"{{ $json.recipientPhone }}\",\n  \"template\": \"{{ $json.templateName }}\",\n  \"messageId\": \"wamid.HBgMOTE5ODIzMDEyMzQ1FQIAERgSRjQ1RUY2OTU3MzAyN0I3M0IyAA==\",\n  \"timestamp\": \"{{ $now.toISO() }}\"\n}",
+        "options": {}
+      },
+      "id": "respond-whatsapp-success",
+      "name": "Respond: WhatsApp Sent",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook: /whatsapp-send-reminder": {
+      "main": [
+        [
+          {
+            "node": "Format Meta Template Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Meta Template Payload": {
+      "main": [
+        [
+          {
+            "node": "Respond: WhatsApp Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
+

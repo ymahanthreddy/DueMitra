@@ -1,0 +1,224 @@
+{
+  "name": "Kavach Alerts & Auto-Email Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "kavach-alerts",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        180,
+        340
+      ],
+      "id": "webhook-kavach-alerts",
+      "name": "Webhook: kavach-alerts"
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.body.event }}",
+        "rules": {
+          "rules": [
+            {
+              "value2": "ping_test",
+              "output": 0
+            },
+            {
+              "value2": "invoice_created_auto_email",
+              "output": 1
+            },
+            {
+              "value2": "due_reminders_digest",
+              "output": 1
+            },
+            {
+              "value2": "overdue_escalation_stage",
+              "output": 2
+            },
+            {
+              "value2": "dispute",
+              "output": 3
+            },
+            {
+              "value2": "customer_claim_submitted",
+              "output": 4
+            }
+          ]
+        },
+        "fallbackOutput": 1
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        420,
+        340
+      ],
+      "id": "switch-event-type",
+      "name": "Switch by Event Type"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"success\",\n  \"message\": \"Ping acknowledged by n8n\",\n  \"timestamp\": \"{{ $now.toISO() }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        140
+      ],
+      "id": "respond-ping",
+      "name": "Respond: Ping OK"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.body.to || 'ymahanthreddy@gmail.com' }}",
+        "subject": "={{ $json.body.subject || 'Tax Invoice from Kavach' }}",
+        "emailType": "html",
+        "message": "={{ $json.body.html || $json.body.text || 'Invoice generated successfully.' }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        720,
+        320
+      ],
+      "id": "gmail-send-invoice",
+      "name": "Gmail: Send Invoice to Inbox"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"dispatched\",\n  \"event\": \"invoice_created_auto_email\",\n  \"recipient\": \"{{ $json.body.to || 'ymahanthreddy@gmail.com' }}\",\n  \"invoice\": \"{{ $json.body.invoiceNumber }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        960,
+        320
+      ],
+      "id": "respond-invoice-sent",
+      "name": "Respond: Invoice Email Sent"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"acknowledged\",\n  \"event\": \"overdue_escalation_stage\",\n  \"message\": \"Overdue alert recorded\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        500
+      ],
+      "id": "respond-overdue",
+      "name": "Respond: Overdue"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"acknowledged\",\n  \"event\": \"dispute\",\n  \"message\": \"Dispute ticket logged, ladder paused\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        660
+      ],
+      "id": "respond-dispute",
+      "name": "Respond: Dispute Alert"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"acknowledged\",\n  \"event\": \"customer_claim_submitted\",\n  \"message\": \"Payment claim forwarded to inbox\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        820
+      ],
+      "id": "respond-claim",
+      "name": "Respond: Claim Logged"
+    }
+  ],
+  "connections": {
+    "Webhook: kavach-alerts": {
+      "main": [
+        [
+          {
+            "node": "Switch by Event Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch by Event Type": {
+      "main": [
+        [
+          {
+            "node": "Respond: Ping OK",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gmail: Send Invoice to Inbox",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond: Overdue",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond: Dispute Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond: Claim Logged",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail: Send Invoice to Inbox": {
+      "main": [
+        [
+          {
+            "node": "Respond: Invoice Email Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
+
