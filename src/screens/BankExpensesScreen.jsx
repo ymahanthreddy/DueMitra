@@ -173,7 +173,7 @@ export function BankExpensesScreen() {
           {monthlyStatements.length > 0 && (
             <button
               type="button"
-              onClick={() => setSelectedStatement(monthlyStatements[monthlyStatements.length - 1])}
+              onClick={() => setSelectedStatement(monthlyStatements[0])}
               className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 text-xs font-bold rounded-xl transition-all cursor-pointer shadow-md"
             >
               <Printer className="w-4 h-4 text-emerald-400" />
@@ -509,11 +509,11 @@ export function BankExpensesScreen() {
                   <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-white/5 text-xs">
                     <div>
                       <span className="text-[10px] text-slate-500 uppercase block">Total Collections</span>
-                      <span className="font-mono font-bold text-emerald-400">{formatPaise(stmt.totalCollectionsPaise || 0)}</span>
+                      <span className="font-mono font-bold text-emerald-400">{formatPaise(stmt.totalCollectionsPaise ?? stmt.totalInflowsPaise ?? 0)}</span>
                     </div>
                     <div>
                       <span className="text-[10px] text-slate-500 uppercase block">Total Expenses</span>
-                      <span className="font-mono font-bold text-rose-400">{formatPaise(stmt.totalExpensesPaise || 0)}</span>
+                      <span className="font-mono font-bold text-rose-400">{formatPaise(stmt.totalExpensesPaise ?? stmt.totalOutflowsPaise ?? 0)}</span>
                     </div>
                   </div>
                 </div>
@@ -521,7 +521,7 @@ export function BankExpensesScreen() {
                 <div className="pt-2 border-t border-white/5 flex items-center justify-between">
                   <div>
                     <span className="text-[10px] text-slate-500 uppercase block">Closing Cash</span>
-                    <span className="font-mono font-bold text-white">{formatPaise(stmt.closingBankPaise || bankBalancePaise)}</span>
+                    <span className="font-mono font-bold text-white">{formatPaise(stmt.closingBankPaise ?? stmt.closingBalancePaise ?? bankBalancePaise)}</span>
                   </div>
 
                   <button

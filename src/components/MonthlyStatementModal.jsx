@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Printer, X, ShieldCheck, Download, Calendar, Landmark, ArrowUpRight, ArrowDownRight, TrendingUp, AlertTriangle } from 'lucide-react';
 import { formatPaise } from '../utils/money';
 import { formatIndianDate } from '../utils/date';
@@ -96,7 +97,7 @@ export function MonthlyStatementModal({ statement, business = {}, onClose }) {
 
   const exp = statement.expenseBreakdown || {};
 
-  return (
+  const modalContent = (
     <div
       className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-hidden animate-fade-in"
       onClick={(e) => {
@@ -358,5 +359,7 @@ export function MonthlyStatementModal({ statement, business = {}, onClose }) {
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 }
 

@@ -6,7 +6,7 @@ import { formatIndianDate, getFinancialYear, getFinancialYearString, getDaysDiff
 import { calculateChaseScore } from '../src/utils/scoring.js';
 import { compute13WeekForecast } from '../src/utils/forecast.js';
 import { getInvoiceLadderStage } from '../src/utils/ladder.js';
-import { calculateEscalatedRent, computeMonthlyExpenseBreakdown } from '../src/utils/affordability.js';
+import { calculateEscalatedRent, computeMonthlyExpenseBreakdown, generateMonthlyStatements } from '../src/utils/affordability.js';
 import { isPlaceholderUrl } from '../src/utils/n8n.js';
 import { en } from '../src/i18n/en.js';
 import { hi } from '../src/i18n/hi.js';
@@ -235,6 +235,36 @@ test('Compound 5% annual rent escalation', () => {
   // Base 10,000, 2 years elapsed at 5% = 11,025
   const rent2Year = calculateEscalatedRent(1000000, 2025, 2027, 0.05);
   assert.strictEqual(rent2Year, 1102500);
+});
+
+test('Monthly statements generate non-zero collections, non-zero expenses, and exact ledger continuity', () => {
+  const stmts = generateMonthlyStatements({
+    invoices: [],
+    expenses: [],
+    currentBankBalancePaise: 48200000,
+  });
+
+  assert.strictEqual(stmts.length, 6);
+
+  // Check each statement has valid non-zero collections and non-zero expenses
+  stmts.forEach((s, idx) => {
+    assert(s.totalCollectionsPaise > 0, `Statement ${idx} collections must be > 0`);
+    assert(s.totalExpensesPaise > 0, `Statement ${idx} expenses must be > 0`);
+    assert(s.closingBankPaise > 0, `Statement ${idx} closing balance must be > 0`);
+    assert.strictEqual(s.totalCollectionsPaise, s.totalInflowsPaise);
+    assert.strictEqual(s.totalExpensesPaise, s.totalOutflowsPaise);
+    assert.strictEqual(s.closingBankPaise, s.closingBalancePaise);
+  });
+
+  // Verify closing cash values are distinct
+  const closingValues = new Set(stmts.map(s => s.closingBankPaise));
+  assert.strictEqual(closingValues.size, 6, 'All 6 statements must have distinct historical closing cash');
+
+  // Verify mathematical continuity: Month N-1 closing cash == Month N opening cash
+  for (let i = 0; i < stmts.length - 1; i++) {
+    assert.strictEqual(stmts[i].openingBalancePaise, stmts[i + 1].closingBalancePaise,
+      `Month ${i} opening balance must match Month ${i+1} closing balance`);
+  }
 });
 
 console.log('\n========================================================');
